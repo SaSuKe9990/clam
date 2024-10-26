@@ -2361,6 +2361,12 @@ const configShardusNetworkTransactions = (): void => {
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Invalid signature for internal tx', Utils.safeStringify(tx))
         return false
       }
+      const shardusAddress = tx.publicKey?.toLowerCase()
+      const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
+      if (!account) {
+        console.log(`Account for shardus address ${shardusAddress} not found, do not add tx`)
+        return false
+      }
       if (txEntry.priority !== 0) {
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('registerBeforeAddVerifier - nodeReward: fail Invalid priority', Utils.safeStringify(tx))
         return false
@@ -2417,7 +2423,8 @@ const configShardusNetworkTransactions = (): void => {
       const shardusAddress = tx.publicKey?.toLowerCase()
       const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
       if (!account) {
-        throw new Error(`Account for shardus address ${shardusAddress} not found`)
+        console.log(`Account for shardus address ${shardusAddress} not found, removing tx`)
+        return true
       }
       const data = account.data as NodeAccount2
       const appliedEntry = data.rewardEndTime === tx.endTime
@@ -2435,6 +2442,12 @@ const configShardusNetworkTransactions = (): void => {
       if (!isValid) {
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validate nodeInitReward fail Invalid signature', Utils.safeStringify(tx))
         /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validate nodeInitReward fail Invalid signature`)
+        return false
+      }
+      const shardusAddress = tx.publicKey?.toLowerCase()
+      const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
+      if (!account) {
+        console.log(`Account for shardus address ${shardusAddress} not found, do not add tx`)
         return false
       }
       if (txEntry.subQueueKey == null || txEntry.subQueueKey != tx.publicKey) {
@@ -2467,7 +2480,8 @@ const configShardusNetworkTransactions = (): void => {
       const shardusAddress = tx.publicKey?.toLowerCase()
       const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
       if (!account) {
-        throw new Error(`Account for shardus address ${shardusAddress} not found`)
+        console.log(`Account for shardus address ${shardusAddress} not found, removing tx`)
+        return true
       }
       const data = account.data as NodeAccount2
 
