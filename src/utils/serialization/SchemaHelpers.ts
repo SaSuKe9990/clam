@@ -2,13 +2,8 @@ import Ajv from 'ajv'
 
 const ajv = new Ajv()
 
-const dependencyMap: Map<string, string> = new Map()
 const schemaMap: Map<string, object> = new Map()
 const verifyFunctions: Map<string, Ajv.ValidateFunction> = new Map()
-
-export function addSchemaDependency(name: string, requiredBy: string): void {
-  dependencyMap.set(requiredBy, name)
-}
 
 export function addSchema(name: string, schema: object): void {
   if (schemaMap.has(name)) {
@@ -18,13 +13,9 @@ export function addSchema(name: string, schema: object): void {
 }
 
 export function initializeSerialization(): void {
-  for (const [key, value] of dependencyMap.entries()) {
-    const schema = schemaMap.get(value)
-    if (schema != null) {
-      ajv.addSchema(schema, value)
-    } else {
-      throw new Error(`error missing schema ${value} required by ${key}`)
-    }
+  // Register each schema exactly once in AJV
+  for (const [name, schema] of schemaMap.entries()) {
+    ajv.addSchema(schema, name)
   }
 }
 

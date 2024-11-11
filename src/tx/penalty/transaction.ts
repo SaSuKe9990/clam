@@ -23,6 +23,8 @@ import { Address, bigIntToHex } from '@ethereumjs/util'
 import { applyPenalty } from './penaltyFunctions'
 import * as AccountsStorage from '../../storage/accountStorage'
 import config from '../../config'
+import {verifyPayload} from '../../types/ajv/Helpers';
+import {AJVSchemaEnum} from '../../types/enum/AJVSchemaEnum';
 
 const penaltyTxsMap: Map<string, PenaltyTX> = new Map()
 
@@ -169,92 +171,21 @@ export function clearOldPenaltyTxs(shardus: Shardus): void {
 }
 
 export function validatePenaltyTX(txId: string, tx: PenaltyTX, isApply = false): { isValid: boolean; reason: string } {
-  if (!tx.reportedNodeId || tx.reportedNodeId === '' || tx.reportedNodeId.length !== 64) {
-    /* prettier-ignore */
-    nestedCountersInstance.countEvent('shardeum-penalty', `validatePenaltyTX fail tx.reportedNode address invalid`)
-    /* prettier-ignore */
-    if (ShardeumFlags.VerboseLogs) console.log(`validatePenaltyTX fail tx.reportedNode address invalid`, tx)
-    return { isValid: false, reason: 'Invalid reportedNode ID' }
+  const errors = verifyPayload(AJVSchemaEnum.PenaltyTx, tx)
+  if (errors != null) {
+    nestedCountersInstance.countEvent('external', 'ajv-failed-penalty-tx')
+    return { isValid: false, reason: 'Invalid penalty tx' }
   }
-  if (tx.reportedNodePublickKey == null) {
-    /* prettier-ignore */
-    nestedCountersInstance.countEvent('shardeum-penalty', `validatePenaltyTX fail tx.reportedNode publicKey invalid`)
-    /* prettier-ignore */
-    if (ShardeumFlags.VerboseLogs) console.log(`validatePenaltyTX fail tx.reportedNode publicKey invalid`, tx)
-    return { isValid: false, reason: 'Invalid reportedNode public key' }
-  }
-  if (tx.operatorEVMAddress == null) {
-    /* prettier-ignore */
-    nestedCountersInstance.countEvent('shardeum-penalty', `validatePenaltyTX fail tx.reportedNode operator address invalid`)
-    /* prettier-ignore */
-    if (ShardeumFlags.VerboseLogs) console.log(`validatePenaltyTX fail tx.reportedNode operator address invalid`, tx)
-    return { isValid: false, reason: 'Invalid reportedNode operator address' }
-  }
-  if (tx.violationType < ViolationType.ShardeumMinID || tx.violationType > ViolationType.ShardeumMaxID) {
-    /* prettier-ignore */
-    nestedCountersInstance.countEvent('shardeum-penalty', `validatePenaltyTX fail tx.violationType not in range`)
-    /* prettier-ignore */
-    if (ShardeumFlags.VerboseLogs) console.log(`validatePenaltyTX fail tx.violationType not in range`, tx)
-    return { isValid: false, reason: 'Invalid Violation type ' }
-  }
-  if (!tx.violationData) {
-    //TODO validate violation data using violation types
-    /* prettier-ignore */
-    nestedCountersInstance.countEvent('shardeum-penalty', `validatePenaltyTX fail tx.violationData invalid`)
-    /* prettier-ignore */
-    if (ShardeumFlags.VerboseLogs) console.log(`validatePenaltyTX fail tx.violationData invalid`, tx)
-    return { isValid: false, reason: 'Invalid Violation data ' }
-  }
-
   // this check should happen only for exe nodes applying the penalty tx
   if (isApply) {
-  // check if we have this penalty tx stored in the Map
-  const preRecordedfPenaltyTX = penaltyTxsMap.get(txId)
+    // check if we have this penalty tx stored in the Map
+    const preRecordedfPenaltyTX = penaltyTxsMap.get(txId)
 
-  if (preRecordedfPenaltyTX == null) {
+    if (preRecordedfPenaltyTX == null) {
       return { isValid: false, reason: 'Penalty TX not found in penaltyTxsMap of exe node' }
-  }
+    }
   }
 
-
-  // validate node-left-early violation
-  // if (tx.violationType === ViolationType.LeftNetworkEarly) {
-  // const violationData = tx.violationData
-  // const latestCycles = shardus.getLatestCycles(10)
-  // const lostCycleRecord = latestCycles.find((record) => record.counter === violationData.nodeLostCycle)
-  // const droppedCycleRecord = latestCycles.find(
-  //   (record) => record.counter === violationData.nodeDroppedCycle
-  // )
-  //
-  // if (lostCycleRecord == null || droppedCycleRecord == null) {
-  //   /* prettier-ignore */
-  //   nestedCountersInstance.countEvent('shardeum-penalty', `validatePenaltyTX fail tx.violationData lostCycleRecord or droppedCycleRecord not found`)
-  //   /* prettier-ignore */
-  //   if (ShardeumFlags.VerboseLogs) console.log(`validatePenaltyTX fail tx.violationData lostCycleRecord or droppedCycleRecord not found`, tx)
-  //   return { isValid: false, reason: 'Invalid Violation data ' }
-  // }
-  // if (!lostCycleRecord.lost.includes(tx.reportedNodeId)) {
-  //   /* prettier-ignore */
-  //   nestedCountersInstance.countEvent('shardeum-penalty', `validatePenaltyTX fail tx.violationData node not found in lost`)
-  //   /* prettier-ignore */
-  //   if (ShardeumFlags.VerboseLogs) console.log(`validatePenaltyTX fail tx.violationData node not found in lost`, tx)
-  //   return { isValid: false, reason: 'Reported node not found in lost' }
-  // }
-  // if (!droppedCycleRecord.apoptosized.includes(tx.reportedNodeId)) {
-  //   /* prettier-ignore */
-  //   nestedCountersInstance.countEvent('shardeum-penalty', `validatePenaltyTX fail tx.violationData node not found in apoptosized`)
-  //   /* prettier-ignore */
-  //   if (ShardeumFlags.VerboseLogs) console.log(`validatePenaltyTX fail tx.violationData node not found in apoptosized`, tx)
-  //   return { isValid: false, reason: 'Reported node not found in apoptosized' }
-  // }
-  // }
-  if (tx.timestamp <= 0) {
-    /* prettier-ignore */
-    nestedCountersInstance.countEvent('shardeum-penalty', `validatePenaltyTX fail tx.timestamp`)
-    /* prettier-ignore */
-    if (ShardeumFlags.VerboseLogs) console.log('validatePenaltyTX fail tx.timestamp', tx)
-    return { isValid: false, reason: 'Duration in tx must be > 0' }
-  }
   if (tx.violationType === ViolationType.LeftNetworkEarly && AccountsStorage.cachedNetworkAccount.current.slashing.enableLeftNetworkEarlySlashing === false) {
     return { isValid: false, reason: 'LeftNetworkEarly slashing is disabled' }
   }

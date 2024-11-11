@@ -2,9 +2,13 @@ import { Utils } from '@shardus/types'
 import { ErrorObject } from 'ajv'
 import { getVerifyFunction } from '../../utils/serialization/SchemaHelpers'
 import { initInjectTxReq } from './InjectTxReq'
+import { initSign } from './SignSchema';
+import { initPenaltyTX } from './PenaltyTXSchema';
 
 export function initAjvSchemas(): void {
+  initSign()
   initInjectTxReq()
+  initPenaltyTX()
 }
 
 export function verifyPayload<T>(name: string, payload: T): string[] | null {
