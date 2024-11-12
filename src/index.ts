@@ -165,13 +165,14 @@ import { accountDeserializer, accountSerializer } from './types/Helpers'
 import { runWithContextAsync } from './utils/RequestContext'
 import { Utils } from '@shardus/types'
 import { SafeBalance } from './utils/safeMath'
-import { verifyStakeTx, verifyUnstakeTx } from './tx/staking/verifyStake'
+import { isStakeUnlocked, verifyStakeTx, verifyUnstakeTx } from './tx/staking/verifyStake'
 import { AJVSchemaEnum } from './types/enum/AJVSchemaEnum'
 import { initAjvSchemas, verifyPayload } from './types/ajv/Helpers'
 import { Sign, ServerMode } from '@shardus/core/dist/shardus/shardus-types'
 
 import { safeStringify } from '@shardus/types/build/src/utils/functions/stringify'
 import { initializeSerialization } from './utils/serialization/SchemaHelpers';
+import { getAccountData } from './utils/account'
 
 let latestBlock = 0
 export const blocks: BlockMap = {}
@@ -898,7 +899,7 @@ function getTransactionObj(
   } else throw Error('tx obj fail')
 }
 
-async function getReadableAccountInfo(account: WrappedEVMAccount): Promise<{
+export async function getReadableAccountInfo(account: WrappedEVMAccount): Promise<{
   nonce: string
   balance: string
   storageRoot: string
@@ -1502,6 +1503,27 @@ const configShardusEndpoints = (): void => {
     }
   })
 
+  shardus.registerExternalGet('canUnstake/:nominee/:nominator', async (req, res) => {
+    try {
+      const nominator = await getAccountData(shardus, req.params['nominator'], { query: {} })
+      const nominatee = await getAccountData(shardus, req.params['nominee'], { query: { type: 9 } })
+      if (nominatee == null || nominator == null || nominator.account == null || nominatee.account == null) {
+        return res.json({ error: 'account not found' })
+      }
+      const stakeUnlocked = isStakeUnlocked(
+        nominator.account,
+        nominatee.account,
+        shardus,
+        AccountsStorage.cachedNetworkAccount
+      )
+
+      return res.json({ stakeUnlocked })
+    } catch (e) {
+      if (ShardeumFlags.VerboseLogs) console.log(`Error /canUnstake`, e)
+      return res.status(500).send(e.message)
+    }
+  })
+
   shardus.registerExternalGet('dumpStorage', debugMiddleware, async (req, res) => {
     // if(isDebugMode()){
     //   return res.json(`endpoint not available`)
@@ -1629,59 +1651,11 @@ const configShardusEndpoints = (): void => {
     }
 
     const address = req.params['address']
-    if (address.length !== 42 && address.length !== 64) {
-      return res.json({ error: 'Invalid address' })
-    }
-
-    const id = shardus.getNodeId()
-    const isInRotationBonds = shardus.isNodeInRotationBounds(id)
-    if (isInRotationBonds) {
-      return res.json({ error: 'node close to rotation edges' })
-    }
-
     try {
-      if (!req.query.type) {
-        let shardusAddress = address.toLowerCase()
-        if (address.length === 42) {
-          shardusAddress = toShardusAddress(address, AccountType.Account)
-        }
-        const hexBlockNumber = req.query.blockNumber as string
-        const hexBlockNumberStr = isHexString(hexBlockNumber) ? hexBlockNumber : null
-
-        let data: WrappedEVMAccount
-        if (isArchiverMode() && hexBlockNumberStr) {
-          data = await AccountsStorage.fetchAccountDataFromCollector(shardusAddress, hexBlockNumberStr)
-          if (!data) {
-            return res.json({ account: null })
-          }
-        } else {
-          const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
-          if (!account) {
-            return res.json({ account: null })
-          }
-          data = account.data as WrappedEVMAccount
-        }
-        fixDeserializedWrappedEVMAccount(data)
-        const readableAccount = await getReadableAccountInfo(data)
-        if (readableAccount) return res.json({ account: readableAccount })
-        else res.json({ account: data })
-      } else {
-        let accountType: number
-        if (typeof req.query.type === 'string') accountType = parseInt(req.query.type)
-        if (AccountType[accountType] == null) {
-          return res.json({ error: 'Invalid account type' })
-        }
-        const secondaryAddressStr: string = (req.query.secondaryAddress as string) || ''
-        if (secondaryAddressStr !== '' && secondaryAddressStr.length !== 66) {
-          return res.json({ error: 'Invalid secondary address' })
-        }
-        const shardusAddress = toShardusAddressWithKey(address, secondaryAddressStr, accountType)
-        const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
-        const readableAccount = convertBigIntsToHex(account)
-        return res.json({ account: readableAccount })
-      }
+      const accountData = await getAccountData(shardus, address, req)
+      res.json(accountData)
     } catch (error) {
-      res.json({ error })
+      res.json({ error: error.message || 'An error occurred' })
     }
   })
 

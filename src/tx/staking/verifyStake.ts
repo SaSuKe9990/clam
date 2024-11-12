@@ -173,7 +173,9 @@ export function verifyUnstakeTx(
   }
 
   // eslint-disable-next-line security/detect-object-injection
-  if (!isStakeUnlocked(nominatorAccount, nomineeAccount, shardus, wrappedStates[globalAccount].data)) {
+  if (
+    !isStakeUnlocked(nominatorAccount, nomineeAccount, shardus, wrappedStates[globalAccount].data).unlocked
+  ) {
     success = false
     reason = `The stake is not unlocked yet!`
   }
@@ -181,33 +183,61 @@ export function verifyUnstakeTx(
   return { success, reason }
 }
 
-function isStakeUnlocked(
+export function isStakeUnlocked(
   nominatorAccount: WrappedEVMAccount,
   nomineeAccount: NodeAccount2,
   shardus: Shardus,
   networkAccount: NetworkAccount
-): boolean {
+): { unlocked: boolean; reason: string; remainingTime: number } {
   const stakeLockTime = networkAccount.current.stakeLockTime
+  const currentTime = shardus.shardusGetTime()
 
   // SLT from time of last staking or unstaking
-  if (shardus.shardusGetTime() - nominatorAccount.operatorAccountInfo.lastStakeTimestamp < stakeLockTime) {
-    return false
+  const timeSinceLastStake = currentTime - nominatorAccount.operatorAccountInfo.lastStakeTimestamp
+  if (timeSinceLastStake < stakeLockTime) {
+    return {
+      unlocked: false,
+      reason: 'Stake lock period active from last staking/unstaking action.',
+      remainingTime: stakeLockTime - timeSinceLastStake,
+    }
   }
 
   // SLT from when node was selected to go active (started syncing)
   const node = shardus.getNodeByPubKey(nomineeAccount.id)
-  if (node && shardus.shardusGetTime() - node.syncingTimestamp * 1000 < stakeLockTime) {
-    return false
+  if (node) {
+    const timeSinceSyncing = currentTime - node.syncingTimestamp * 1000
+    if (timeSinceSyncing < stakeLockTime) {
+      return {
+        unlocked: false,
+        reason: 'Stake lock period active from node starting to sync.',
+        remainingTime: stakeLockTime - timeSinceSyncing,
+      }
+    }
+  }
+
+  const timeSinceActive = currentTime - nomineeAccount.rewardStartTime * 1000
+  if (timeSinceActive < stakeLockTime) {
+    return {
+      unlocked: false,
+      reason: 'Stake lock period active from last active state.',
+      remainingTime: stakeLockTime - timeSinceActive,
+    }
   }
 
   // SLT from time of last went active
-  // THIS MAY BE REDUNDANT as we check for active status in verifyUnstakeTx
-  if (shardus.shardusGetTime() - nomineeAccount.rewardStartTime * 1000 < stakeLockTime) {
-    return false
+  const timeSinceInactive = currentTime - nomineeAccount.rewardEndTime * 1000
+  if (timeSinceInactive < stakeLockTime) {
+    return {
+      unlocked: false,
+      reason: 'Stake lock period active from last inactive/exit state.',
+      remainingTime: stakeLockTime - timeSinceInactive,
+    }
   }
 
   // SLT from time of last went inactive/exit
-  if (shardus.shardusGetTime() - nomineeAccount.rewardEndTime * 1000 < stakeLockTime) {
-    return false
+  return {
+    unlocked: true,
+    reason: '',
+    remainingTime: 0,
   }
 }
