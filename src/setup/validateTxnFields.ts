@@ -74,14 +74,6 @@ export const validateTxnFields =
       }
       const txId = generateTxId(tx)
 
-      if (isDebugTx(tx)) {
-        return {
-          success: true,
-          reason: 'always valid',
-          txnTimestamp,
-        }
-      }
-
       if (isSetCertTimeTx(tx)) {
         const setCertTimeTx = tx as SetCertTime
         const result = validateSetCertTimeTx(setCertTimeTx)
@@ -195,6 +187,14 @@ export const validateTxnFields =
           success,
           reason,
           txnTimestamp: txnTimestamp,
+        }
+      }
+
+      if (isDebugTx(tx)) {
+        return {
+          success: true,
+          reason: 'always valid',
+          txnTimestamp,
         }
       }
 
