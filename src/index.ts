@@ -275,7 +275,7 @@ let debugTotalServicePointRequests = 0
 //latest value from isReadyToJoin function call
 let isReadyToJoinLatestValue = false
 //used only for when the nework is...
-let mustUseAdminCert = false
+let isAdminCertUnexpired = false
 
 /**
  * Allows us to attempt to spend points.  We have ShardeumFlags.ServicePointsPerSecond
@@ -2802,7 +2802,7 @@ async function applyInternalTx(
       txId,
       txTimestamp,
       applyResponse,
-      mustUseAdminCert
+      isAdminCertUnexpired
     ).catch((error) => {
       /* prettier-ignore */ if (logFlags.error) console.error('Error in applyClaimRewardTX', error)}
     )
@@ -6629,7 +6629,7 @@ const shardusSetup = (): void => {
         version,
         stakeCert,
         adminCert,
-        mustUseAdminCert,
+        isAdminCertUnexpired,
       }
       return joinData
     },
@@ -6686,6 +6686,7 @@ const shardusSetup = (): void => {
         const stakingEnabled =
           ShardeumFlags.StakingEnabled && numActiveNodes >= ShardeumFlags.minActiveNodesForStaking
 
+        // there is no flag to turn off golden ticket if we want to
         //Checks for golden ticket
         if (appJoinData.adminCert?.goldenTicket === true) {
           const adminCert: AdminCert = appJoinData.adminCert
@@ -6742,6 +6743,8 @@ const shardusSetup = (): void => {
           }
         }
 
+        // The below block has basically the same logic as the above block. Do we even want to use admin certs for anything other than GT nodes?
+        // if not, we should remove it
         // if condition true and if none of this triggers it'll go past the staking checks and return true...
         if (
           stakingEnabled &&
@@ -6811,8 +6814,8 @@ const shardusSetup = (): void => {
         ) {
           /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'validating join request with staking enabled')
 
-          if (appJoinData.mustUseAdminCert) {
-            /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'validateJoinRequest fail: appJoinData.mustUseAdminCert')
+          if (appJoinData.isAdminCertUnexpired) {
+            /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'validateJoinRequest fail: appJoinData.isAdminCertUnexpired')
             return {
               success: false,
               reason: 'Join Request wont have a stake certificate',
@@ -7021,13 +7024,13 @@ const shardusSetup = (): void => {
       }
 
       isReadyToJoinLatestValue = false
-      mustUseAdminCert = false
+      isAdminCertUnexpired = false
 
       //process golden ticket first
       if (adminCert && adminCert.certExp > Date.now() && adminCert?.goldenTicket === true) {
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('Join req with admincert and golden ticket')
         isReadyToJoinLatestValue = true
-        mustUseAdminCert = true
+        isAdminCertUnexpired = true
         /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'goldenTicket available, isReadyToJoin = true')
         return true
       }
@@ -7052,7 +7055,7 @@ const shardusSetup = (): void => {
           /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`checkAdminCert ${Utils. safeStringify(adminCert)}`)
           if (adminCert.certExp > shardeumGetTime()) {
             isReadyToJoinLatestValue = true
-            mustUseAdminCert = true
+            isAdminCertUnexpired = true
             /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'valid admin cert, isReadyToJoin = true')
             /* prettier-ignore */ if (logFlags.important_as_error) console.log('valid admin cert, isReadyToJoin = true')
             return true

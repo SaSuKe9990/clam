@@ -141,7 +141,7 @@ export function validateClaimRewardState(
   tx: ClaimRewardTX,
   wrappedStates: WrappedStates,
   shardus,
-  mustUseAdminCert = false
+  isAdminCertUnexpired = false
 ): { result: string; reason: string } {
   /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validating claimRewardTX', tx)
   const isValid = crypto.verifyObj(tx)
@@ -151,7 +151,7 @@ export function validateClaimRewardState(
     return { result: 'fail', reason: 'Invalid signature' }
   }
 
-  if (!ShardeumFlags.enableClaimRewardAdminCert && mustUseAdminCert) {
+  if (!ShardeumFlags.enableClaimRewardAdminCert && isAdminCertUnexpired) {
     /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', `validateClaimRewardState fail Reward is disabled for admin cert or golden ticket node`)
     /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log('validateClaimRewardState fail Reward is disabled for admin cert or golden ticket node', tx)
     return { result: 'fail', reason: 'Reward is disabled for admin cert or golden ticket node' }
@@ -194,10 +194,10 @@ export async function applyClaimRewardTx(
   txId: string,
   txTimestamp: number,
   applyResponse: ShardusTypes.ApplyResponse,
-  mustUseAdminCert = false
+  isAdminCertUnexpired = false
 ): Promise<void> {
   if (ShardeumFlags.VerboseLogs) console.log(`Running applyClaimRewardTx`, tx, wrappedStates)
-  const isValidRequest = validateClaimRewardState(tx, wrappedStates, shardus, mustUseAdminCert)
+  const isValidRequest = validateClaimRewardState(tx, wrappedStates, shardus, isAdminCertUnexpired)
   if (isValidRequest.result === 'fail') {
     /* prettier-ignore */
     /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`Invalid claimRewardTx, nominee ${tx.nominee}, reason: ${isValidRequest.reason}`)

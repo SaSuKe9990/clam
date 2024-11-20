@@ -505,5 +505,5 @@ export interface AppJoinData {
   version: string
   stakeCert: StakeCert
   adminCert: AdminCert
-  mustUseAdminCert: boolean
+  isAdminCertUnexpired: boolean
 }
