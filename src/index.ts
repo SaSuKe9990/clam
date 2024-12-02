@@ -180,6 +180,7 @@ import {
   verify as verifyTransferFromSecureAccount,
   secureAccountDataMap 
 } from './shardeum/secureAccounts'
+import * as TicketManager from './setup/ticket-manager'
 
 let latestBlock = 0
 export const blocks: BlockMap = {}
@@ -212,6 +213,7 @@ export let logFlags = {
   important_as_fatal: true,
   shardedCache: false,
   aalg: false,
+  debug: false
 }
 
 // Read the CLI and GUI versions and save them in memory
@@ -3951,12 +3953,14 @@ const shardusSetup = (): void => {
           }
         }
       } catch (error) {
-        if (ShardeumFlags.VerboseLogs) console.log(`Stake/Unstake tx verification failed, reason: ${error}`)
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Stake/Unstake tx verification failed, reason: ${error}`)
         verifyResult = {
           success: false,
           reason: error
         }
       }
+
+      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`[apply] verifyResult: ${JSON.stringify(verifyResult)}`)
 
       //Note this currently only applies to stake and unstake, if you expand to deal with other
       //TX types please take care that the code in this block below is still correct.
@@ -7035,6 +7039,7 @@ const shardusSetup = (): void => {
     ): Promise<boolean> {
       const currentTime = Date.now()
       let networkAccount = null
+      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`isReadyToJoin cachedNetworkAccount 1 ${Utils.safeStringify(cachedNetworkAccount)}`)
       if (currentTime < cacheExpirationTimestamp && cachedNetworkAccount) {
         // Use cached result if it's still valid
         networkAccount = cachedNetworkAccount
@@ -7047,6 +7052,8 @@ const shardusSetup = (): void => {
         cacheExpirationTimestamp = currentTime + ShardeumFlags.networkAccountCacheDuration * 1000
         /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`isReadyToJoin fetched new network account ${Utils. safeStringify(networkAccount)}`)
       }
+
+      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`isReadyToJoin cachedNetworkAccount 2 ${Utils.safeStringify(cachedNetworkAccount)}`)
 
       if (initialNetworkParamters && networkAccount) {
         if (
@@ -7130,7 +7137,7 @@ const shardusSetup = (): void => {
       }
       if (adminCert && !ShardeumFlags.AdminCertEnabled) {
         /* prettier-ignore */ nestedCountersInstance.countEvent('shardeum-staking', 'adminCert present but AdminCertEnabled=false')
-        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest: AdminCert available but not utilized due to configuration`)
+        /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`isReadyToJoin: AdminCert available but not utilized due to configuration`)
       }
 
       /* prettier-ignore */ if (logFlags.important_as_error) console.log(`Running isReadyToJoin cycle:${latestCycle.counter} publicKey: ${publicKey}`)
@@ -7651,7 +7658,7 @@ const shardusSetup = (): void => {
 
         const minVersion = AccountsStorage.cachedNetworkAccount.current.minVersion
         if (!isEqualOrNewerVersion(minVersion, appJoinData.version)) {
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: old version`)
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`canStayOnStandby fail: old version`)
           return {
             canStay: false,
             reason: `canStayOnStandby: standby node version: ${appJoinData.version} < minVersion ${minVersion}`,
@@ -7665,7 +7672,7 @@ const shardusSetup = (): void => {
           appJoinData.version &&
           !isEqualOrOlderVersion(latestVersion, appJoinData.version)
         ) {
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: version number is newer than latest`)
+          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`canStayOnStandby fail: version number is newer than latest`)
           return {
             canStay: false,
             reason: `version number is newer than latest. The latest allowed app version is ${latestVersion}. Join request node app version is ${appJoinData.version}`,
@@ -7834,24 +7841,26 @@ async function fetchNetworkAccountFromArchiver(): Promise<WrappedAccount> {
     archiver: Archiver
   }[] = []
   for (const archiver of archiverList) {
+    const archiverUrl = `http://${archiver.ip}:${archiver.port}/get-network-account?hash=true`
     try {
       const res = await axios.get<{ networkAccountHash: string,
         sign: {
           owner: string,
           sig: string
         }
-      }>(
-        `http://${archiver.ip}:${archiver.port}/get-network-account?hash=true`
-      )
+      }>(archiverUrl)
       if (!res.data) {
         /* prettier-ignore */ nestedCountersInstance.countEvent('network-config-operation', 'failure: did not get network account from archiver private key. Use default configs.')
         throw new Error(`fetchNetworkAccountFromArchiver() from pk:${archiver.publicKey} returned null`)
       }
+      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`[fetchNetworkAccountFromArchiver] data: ${JSON.stringify(res.data)}`)
       const isFromArchiver = archiver.publicKey === res.data.sign.owner
+      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`[fetchNetworkAccountFromArchiver] isFronArchiver: ${isFromArchiver}`)
       if (!isFromArchiver) {
         throw new Error(`The response signature is not the same from archiver pk:${archiver.publicKey}`)
       }
       const isResponseVerified = verify(res.data, archiver.publicKey)
+      /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`[fetchNetworkAccountFromArchiver] isResponseVerified: ${isResponseVerified}`)
       if (!isResponseVerified) {
         throw new Error(`The response signature is not the same from archiver pk:${archiver.publicKey}`)
       }
@@ -7862,19 +7871,21 @@ async function fetchNetworkAccountFromArchiver(): Promise<WrappedAccount> {
     } catch (ex) {
       //dont let one bad archiver crash us !
       /* prettier-ignore */ nestedCountersInstance.countEvent('network-config-operation', `error: ${ex?.message}`)
+      console.error(`[fetchNetworkAccountFromArchiver] ERROR retrieving/processing data from archiver ${archiverUrl}: `, ex)
     }
   }
 
   //make sure there was a majority winner for the hash
   const majorityValue = findMajorityResult(values, (v) => v.hash)
+  /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`[fetchNetworkAccountFromArchiver] majorityValue: ${JSON.stringify(majorityValue)}`)
   if (!majorityValue) {
     /* prettier-ignore */ nestedCountersInstance.countEvent('network-config-operation', 'failure: no majority found for archivers get-network-account result. Use default configs.')
     throw new Error(`no majority found for archivers get-network-account result `)
   }
+  const url = `http://${majorityValue.archiver.ip}:${majorityValue.archiver.port}/get-network-account?hash=false`
   try {
-    const res = await axios.get<{ networkAccount: WrappedAccount }>(
-      `http://${majorityValue.archiver.ip}:${majorityValue.archiver.port}/get-network-account?hash=false`
-    )
+    const res = await axios.get<{ networkAccount: WrappedAccount }>(url)
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`[fetchNetworkAccountFromArchiver] data: ${JSON.stringify(res?.data)}`)
     if (!res.data) {
       /* prettier-ignore */ nestedCountersInstance.countEvent('network-config-operation', 'failure: did not get network account from archiver private key, returned null. Use default configs.')
       throw new Error(
@@ -7884,6 +7895,7 @@ async function fetchNetworkAccountFromArchiver(): Promise<WrappedAccount> {
 
     return res.data.networkAccount as WrappedAccount
   } catch (ex) {
+    console.error(`[fetchNetworkAccountFromArchiver] ERROR retrieving/processing data from archiver ${url}: `, ex)
     /* prettier-ignore */ nestedCountersInstance.countEvent('network-config-operation', `error: ${ex?.message}`)
     throw new Error(`Not able to fetch get-network-account result from archiver `)
   }
@@ -7974,14 +7986,14 @@ export function shardeumGetTime(): number {
   try {
     // Attempt to get and patch config. Error if unable to get config.
     const networkAccount = await fetchNetworkAccountFromArchiver()
-    console.log('Network Account', networkAccount)
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`[index] networkAccount: ${JSON.stringify(networkAccount)}`)
     AccountsStorage.setCachedNetworkAccount(networkAccount.data)
 
     configToLoad = await updateConfigFromNetworkAccount(config, networkAccount)
   } catch (error) {
     configToLoad = config
     /* prettier-ignore */ nestedCountersInstance.countEvent('network-config-operation', 'Error: Use default configs.')
-    console.log(`Error: ${formatErrorMessage(error)} \nUsing default configs`)
+    /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`Error: ${formatErrorMessage(error)} \nUsing default configs`)
   }
 
   // this code is only excuted when starting or setting up the network***
@@ -8003,6 +8015,9 @@ export function shardeumGetTime(): number {
     AccountsStorage.setAccount(networkAccount, await AccountsStorage.getAccount(networkAccount))
   shardusSetup()
   config.server = shardus.config //possibly set the server config to match the merged one?
+
+  /** Start process for updating tickets (e.g. silver) */
+  TicketManager.updateTicketMapAndScheduleNextUpdate()
 
   if (ShardeumFlags.GlobalNetworkAccount) {
     // CODE THAT GETS EXECUTED WHEN NODES START

@@ -152,6 +152,7 @@ StakingEnabled: false
 ```bash
 // src/config/index.ts
 cycleDuration: 30,
+server/features/tickets/updateTicketListTimeInMs: 300000
 
 // src/shardeum/shardeumFlags.ts
 blockProductionRate: 3,

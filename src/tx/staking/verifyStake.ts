@@ -8,13 +8,14 @@ import {
   WrappedEVMAccount,
   WrappedStates,
 } from '../../shardeum/shardeumTypes'
-import * as AccountsStorage from '../../storage/accountStorage'
 import { _base16BNParser, scaleByStabilityFactor } from '../../utils'
 import { Address } from '@ethereumjs/util'
 import { networkAccount as globalAccount } from '../../shardeum/shardeumConstants'
-import { logFlags } from '../..'
+import { logFlags, shardusConfig } from '../..'
 import { toShardusAddress } from '../../shardeum/evmAddress'
 import { nestedCountersInstance, Shardus } from '@shardus/core'
+import * as TicketManager from '../../setup/ticket-manager'
+import { doesTransactionSenderHaveTicketType, TicketTypes } from '../../setup/ticket-manager'
 
 export function verifyStakeTx(
   appData: any,
@@ -33,6 +34,7 @@ export function verifyStakeTx(
   const minStakeAmount = scaleByStabilityFactor(minStakeAmountUsd, networkAccount)
   const nomineeAccount = wrappedStates[stakeCoinsTx.nominee].data as NodeAccount2
   if (typeof stakeCoinsTx.stake === 'object') stakeCoinsTx.stake = BigInt(stakeCoinsTx.stake)
+
   if (stakeCoinsTx.nominator == null || stakeCoinsTx.nominator.toLowerCase() !== senderAddress.toString()) {
     /* prettier-ignore */ if (logFlags.dapp_verbose) console.log(`nominator vs tx signer`, stakeCoinsTx.nominator, senderAddress.toString())
     success = false
@@ -80,6 +82,16 @@ export function verifyStakeTx(
     return {
       success,
       reason,
+    }
+  }
+
+  const isTicketTypesEnabled = ShardeumFlags.ticketTypesEnabled
+  /* prettier-ignore */ if (logFlags.debug) console.log(`[verifyStake][verifyStakeTx] isTicketsEnabled: ${isTicketTypesEnabled}`)
+  if (isTicketTypesEnabled) {
+    const doesNominatorHaveTicketTypeResponse: {success:boolean;reason:string} = doesTransactionSenderHaveTicketType({ ticketType: TicketTypes.SILVER, senderAddress })
+    /* prettier-ignore */ if (logFlags.debug) console.log(`[verifyStake][verifyStakeTx] doesNominatorHaveTicketTypeResponse: ${doesNominatorHaveTicketTypeResponse}`)
+    if (!doesNominatorHaveTicketTypeResponse.success){
+      return doesNominatorHaveTicketTypeResponse
     }
   }
 
