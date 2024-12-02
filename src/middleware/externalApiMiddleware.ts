@@ -1,7 +1,8 @@
 import { ShardeumFlags } from '../shardeum/shardeumFlags'
+import {Handler} from 'express';
 
-export const getExternalApiMiddleware = () => {
-  return (req, res, next): unknown => {
+export const getExternalApiMiddleware = (): Handler => {
+  return (req, res, next) => {
     const { path, method } = req
 
     let isAllowed = true // Default to true
