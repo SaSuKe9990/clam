@@ -368,6 +368,8 @@ config = merge(
           /* prettier-ignore */ '26c333f353c06766cf811ba97572409848c90fb66291d8ef91e25c4d1bf439c7': DevSecurityLevel.High,
           /* prettier-ignore */ 'abb118e65bbd834d3f9c3135f72a3ed883b5c3b85c9e4a647b142f2824663e20': DevSecurityLevel.High,
           /* prettier-ignore */ '154cca8f6394fe43a08b579a4fd5fc666cf69b2b1f54364790f35bf4d612cf66': DevSecurityLevel.High,
+          /* prettier-ignore */ 'ee2e6e301f1e4474317f6e3d1e9c9e8d6abccd9a263654e639303e4aadc9ff32': DevSecurityLevel.High,
+          /* prettier-ignore */ 'e55a70ae4ea0a1ef4760d40df72a78016fddbaa70e479d032ddbb6f77a07ddc8': DevSecurityLevel.High,
           // always prefix with prettier ignore
         },
         multisigKeys: {
