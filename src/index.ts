@@ -2901,23 +2901,35 @@ async function applyInternalTx(
   }
   if (internalTx.internalTXType === InternalTXType.ClaimReward) {
     const claimRewardTx = internalTx as ClaimRewardTX
-    applyClaimRewardTx(
-      shardus,
-      claimRewardTx,
-      wrappedStates,
-      txId,
-      txTimestamp,
-      applyResponse,
-      isAdminCertUnexpired
-    ).catch((error) => {
-      /* prettier-ignore */ if (logFlags.error) console.error('Error in applyClaimRewardTX', error)}
-    )
+    try {
+      await applyClaimRewardTx(
+        shardus,
+        claimRewardTx,
+        wrappedStates,
+        txId,
+        txTimestamp,
+        applyResponse,
+        isAdminCertUnexpired
+      )
+    } catch (error) {
+      /* prettier-ignore */if (logFlags.error) console.error('Error in applyClaimRewardTX', error)
+      shardus.applyResponseSetFailed(
+        applyResponse,
+        `applyClaimRewardTX failed for nominee: ${claimRewardTx.nominee}, reason: ${error?.message ?? error}`
+      );
+    }
   }
   if (internalTx.internalTXType === InternalTXType.Penalty) {
     const penaltyTx = internalTx as PenaltyTX
-    applyPenaltyTX(shardus, penaltyTx, wrappedStates, txId, txTimestamp, applyResponse).catch((error) => {
+    try {
+      await applyPenaltyTX(shardus, penaltyTx, wrappedStates, txId, txTimestamp, applyResponse)
+    } catch (error) {
       /* prettier-ignore */ if (logFlags.error) console.error('Error in applyPenaltyTX', error)
-    })
+      shardus.applyResponseSetFailed(
+        applyResponse,
+        `applyPenaltyTX failed for reportedNode: ${penaltyTx.reportedNodePublickKey}, reason: ${error?.message ?? error}`
+      );
+    }
   }
   if (internalTx.internalTXType === InternalTXType.TransferFromSecureAccount) {
     await applyTransferFromSecureAccount(
