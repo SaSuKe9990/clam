@@ -31,13 +31,17 @@ jest.mock('@shardus/core', () => {
         '0x123': 2
       }),
       applyResponseAddChangedAccount: jest.fn(),
-      applyResponseAddReceiptData: jest.fn()
+      applyResponseAddReceiptData: jest.fn(),
+      setDebugSetLastAppAwait: jest.fn()
     })),
     VectorBufferStream: actual.VectorBufferStream,
     DevSecurityLevel: {
       High: 2,
       Medium: 1,
       Low: 0
+    },
+    DebugComplete: {
+      Completed: 'Completed'
     }
   }
 })
@@ -62,7 +66,13 @@ jest.mock('../../../../src', () => ({
       minMultisigRequiredForGlobalTxs: 1
     }
   },
-  createInternalTxReceipt: jest.fn()
+  createInternalTxReceipt: jest.fn(),
+  getApplyTXState: jest.fn().mockReturnValue({
+    checkpoint: jest.fn().mockResolvedValue(undefined),
+    commit: jest.fn().mockResolvedValue(undefined),
+    revert: jest.fn().mockResolvedValue(undefined),
+    putAccount: jest.fn().mockResolvedValue(undefined)
+  })
 }))
 
 describe('secureAccounts', () => {

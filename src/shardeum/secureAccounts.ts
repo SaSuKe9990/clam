@@ -9,7 +9,10 @@ import { createInternalTxReceipt, shardusConfig } from '..'
 import { _shardusWrappedAccount } from './wrappedEVMAccountFunctions'
 
 import genesisSecureAccounts from '../config/genesis-secure-accounts.json'
-import { bigIntToHex } from '@ethereumjs/util'
+import { Address, bigIntToHex } from '@ethereumjs/util'
+import { getApplyTXState } from '../'
+import { DebugComplete } from '@shardus/core'
+
 validateSecureAccountConfig(genesisSecureAccounts)
 
 export interface SecureAccount extends BaseAccount {
@@ -247,20 +250,44 @@ export async function apply(
 
   const amount = BigInt(tx.amount)
 
-  sourceEOAData.account.balance = BigInt(sourceEOAData.account.balance) - amount
-  sourceEOAData.account.nonce += BigInt(1)
-  destEOAData.account.balance = BigInt(destEOAData.account.balance) + amount
+  // Get the shardeumState instance
+  let shardeumState = getApplyTXState(txId)
 
-  // update timestamp for each account
-  sourceEOAData.timestamp = txTimestamp
-  destEOAData.timestamp = txTimestamp
-  secureAccountData.timestamp = txTimestamp
+  // Start transaction
+  shardus.setDebugSetLastAppAwait(`apply():checkpoint_secure_accounts`)
+  await shardeumState.checkpoint()
 
-  secureAccountData.nonce += 1
+  try {
+    // Update EVM accounts
+    sourceEOAData.account.balance = BigInt(sourceEOAData.account.balance) - amount
+    sourceEOAData.account.nonce += BigInt(1)
+    destEOAData.account.balance = BigInt(destEOAData.account.balance) + amount
 
-  updateEthAccountHash(sourceEOAData)
-  updateEthAccountHash(destEOAData)
-  updateEthAccountHash(secureAccountData)
+    sourceEOAData.timestamp = txTimestamp
+    destEOAData.timestamp = txTimestamp
+
+    updateEthAccountHash(sourceEOAData)
+    updateEthAccountHash(destEOAData)
+
+    // Put updated EVM accounts into state
+    await shardeumState.putAccount(Address.fromString(secureAccountConfig.SourceFundsAddress), sourceEOAData.account)
+    await shardeumState.putAccount(Address.fromString(secureAccountConfig.RecipientFundsAddress), destEOAData.account)
+    
+    // Update secure account
+    secureAccountData.timestamp = txTimestamp
+    secureAccountData.nonce += 1
+    updateEthAccountHash(secureAccountData)
+    // note: secure account is already in wrappedStates, no need for putAccount
+
+    // Only commit after all updates succeed
+    await shardeumState.commit()
+  } catch (error) {
+    // If anything fails, revert all changes
+    await shardeumState.revert()
+    throw error
+  }
+
+  shardus.setDebugSetLastAppAwait(`apply():checkpoint_secure_accounts`, DebugComplete.Completed)
   
   const wrappedSourceEOA = _shardusWrappedAccount(sourceEOAData)
   const wrappedDestEOA = _shardusWrappedAccount(destEOAData)
