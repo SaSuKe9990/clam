@@ -836,7 +836,7 @@ async function tryGetRemoteAccountCB(
   return fixedEVMAccount
 }
 
-function getStakeTxBlobFromEVMTx(
+export function getStakeTxBlobFromEVMTx(
   transaction: Transaction[TransactionType.Legacy] | Transaction[TransactionType.AccessListEIP2930]
 ): unknown {
   const stakeTxString = toAscii(bytesToHex(transaction.data))
@@ -4019,6 +4019,8 @@ const shardusSetup = (): void => {
       }
       try {
         if (appData.internalTx && appData.internalTXType === InternalTXType.Stake) {
+          appData.internalTx = getStakeTxBlobFromEVMTx(transaction)
+          appData.internalTx.stake = BigInt(appData.internalTx.stake)
           verifyResult = verifyStakeTx(appData.internalTx, senderAddress, wrappedStates)
         }
         if (appData.internalTx && appData.internalTXType === InternalTXType.Unstake) {
@@ -5548,6 +5550,8 @@ const shardusSetup = (): void => {
           (appData.internalTXType === InternalTXType.Stake ||
             appData.internalTXType === InternalTXType.Unstake)
         ) {
+          appData.internalTx = getStakeTxBlobFromEVMTx(transaction)
+          if (appData.internalTx.stake) appData.internalTx.stake = BigInt(appData.internalTx.stake)
           const transformedTargetKey = appData.internalTx.nominee // no need to convert to shardus address
           result.targetKeys.push(transformedTargetKey)
           result.sourceKeys.push(networkAccount)
