@@ -217,6 +217,13 @@ config = merge(config, {
       rotationEdgeToAvoid: 0, //we are moving away from this feature in current testing.  There seem to be errors related to it
       allowActivePerCycle: 1,
 
+      syncFloorEnabled: false,  //ITN initially false for rotation safety
+      syncingDesiredMinCount: 50, //ITN = 50
+
+      activeRecoveryEnabled: false,//ITN initially false for rotation safety
+      allowActivePerCycleRecover: 4, 
+
+
       maxStandbyCount: 30000, //max allowed standby nodes count
       enableMaxStandbyCount: true,
 

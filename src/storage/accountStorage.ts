@@ -119,6 +119,11 @@ export async function getCachedNetworkAccount(): Promise<NetworkAccount> {
 
 export async function setAccount(address: string, account: WrappedEVMAccount): Promise<void> {
   try {
+    if (ShardeumFlags.debugGlobalAccountUpdateFail && address === networkAccount) {
+      console.log('debugGlobalAccountUpdateFail')
+      return
+    }
+
     if (ShardeumFlags.UseDBForAccounts === true) {
       const accountEntry = {
         accountId: address,

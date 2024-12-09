@@ -123,6 +123,7 @@ interface ShardeumFlags {
   failedStakeReceipt: boolean // For stake/unstake TXs that fail the checks in apply(), create an EVM receipt marked as failed
   debugDefaultBalance: string
   disableSmartContractEndpoints: boolean
+  debugGlobalAccountUpdateFail: boolean
   ticketTypesEnabled: boolean
 }
 
@@ -284,6 +285,7 @@ export const ShardeumFlags: ShardeumFlags = {
   failedStakeReceipt: true,
   debugDefaultBalance: '100', //In debug mode the default value is 100 SHM.  This is needed for certain load test operations
   disableSmartContractEndpoints: true, // Disable smart contract read endpoints by default
+  debugGlobalAccountUpdateFail: false,
   ticketTypesEnabled: false,
 }
 
