@@ -143,9 +143,9 @@ config = merge(config, {
     p2p: {
       cycleDuration: 60,
       minNodesToAllowTxs: 1, // to allow single node networks
-      baselineNodes: process.env.baselineNodes ? parseInt(process.env.baselineNodes) : 640, // config used for baseline for entering recovery, restore, and safety. Should be equivalient to minNodes on network startup
-      minNodes: process.env.minNodes ? parseInt(process.env.minNodes) : 640,
-      maxNodes: process.env.maxNodes ? parseInt(process.env.maxNodes) : 1100,
+      baselineNodes: process.env.baselineNodes ? parseInt(process.env.baselineNodes) : 1280, // config used for baseline for entering recovery, restore, and safety. Should be equivalient to minNodes on network startup
+      minNodes: process.env.minNodes ? parseInt(process.env.minNodes) : 1280,
+      maxNodes: process.env.maxNodes ? parseInt(process.env.maxNodes) : 1280,
       maxJoinedPerCycle: 10,
       maxSyncingPerCycle: 10,
       maxRotatedPerCycle: process.env.maxRotatedPerCycle ? parseInt(process.env.maxRotatedPerCycle) : 1,
@@ -218,11 +218,13 @@ config = merge(config, {
       allowActivePerCycle: 1,
 
       syncFloorEnabled: true,  //ITN initially false for rotation safety
-      syncingDesiredMinCount: 50, //ITN = 50
+      syncingDesiredMinCount: 40, //ITN = 40
 
       activeRecoveryEnabled: true,//ITN initially false for rotation safety
       allowActivePerCycleRecover: 4, 
 
+      flexibleRotationEnabled: true, //ITN 1.16.1
+      flexibleRotationDelta: 10,
 
       maxStandbyCount: 30000, //max allowed standby nodes count
       enableMaxStandbyCount: true,

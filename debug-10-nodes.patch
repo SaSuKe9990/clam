@@ -1,14 +1,14 @@
 diff --git a/src/config/index.ts b/src/config/index.ts
-index 706b9008..23afcdb0 100644
+index 78a7c2c2..c9986840 100644
 --- a/src/config/index.ts
 +++ b/src/config/index.ts
 @@ -143,9 +143,9 @@ config = merge(config, {
      p2p: {
        cycleDuration: 60,
        minNodesToAllowTxs: 1, // to allow single node networks
--      baselineNodes: process.env.baselineNodes ? parseInt(process.env.baselineNodes) : 640, // config used for baseline for entering recovery, restore, and safety. Should be equivalient to minNodes on network startup
--      minNodes: process.env.minNodes ? parseInt(process.env.minNodes) : 640,
--      maxNodes: process.env.maxNodes ? parseInt(process.env.maxNodes) : 1100,
+-      baselineNodes: process.env.baselineNodes ? parseInt(process.env.baselineNodes) : 1280, // config used for baseline for entering recovery, restore, and safety. Should be equivalient to minNodes on network startup
+-      minNodes: process.env.minNodes ? parseInt(process.env.minNodes) : 1280,
+-      maxNodes: process.env.maxNodes ? parseInt(process.env.maxNodes) : 1280,
 +      baselineNodes: process.env.baselineNodes ? parseInt(process.env.baselineNodes) : 10, // config used for baseline for entering recovery, restore, and safety. Should be equivalient to minNodes on network startup
 +      minNodes: process.env.minNodes ? parseInt(process.env.minNodes) : 10,
 +      maxNodes: process.env.maxNodes ? parseInt(process.env.maxNodes) : 10,
@@ -28,12 +28,12 @@ index 706b9008..23afcdb0 100644
        allowActivePerCycle: 1,
  
        syncFloorEnabled: true,  //ITN initially false for rotation safety
--      syncingDesiredMinCount: 50, //ITN = 50
-+      syncingDesiredMinCount: 5, //ITN = 50
+-      syncingDesiredMinCount: 40, //ITN = 40
++      syncingDesiredMinCount: 5, //ITN = 40
  
        activeRecoveryEnabled: true,//ITN initially false for rotation safety
        allowActivePerCycleRecover: 4, 
-@@ -284,7 +284,7 @@ config = merge(config, {
+@@ -295,7 +295,7 @@ config = merge(config, {
      sharding: {
        nodesPerConsensusGroup: process.env.nodesPerConsensusGroup
          ? parseInt(process.env.nodesPerConsensusGroup)
@@ -42,7 +42,7 @@ index 706b9008..23afcdb0 100644
        nodesPerEdge: process.env.nodesPerEdge ? parseInt(process.env.nodesPerEdge) : 5,
        executeInOneShard: true,
      },
-@@ -334,11 +334,11 @@ config = merge(
+@@ -345,11 +345,11 @@ config = merge(
    config,
    {
      server: {
