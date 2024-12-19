@@ -230,6 +230,15 @@ config = merge(config, {
       formingNodesPerCycle: 16, //how many nodes can be add in a cycle while in forming mode
 
       downNodeFilteringEnabled: false, //turning down node filtering off for diagnostics purposes
+    
+      //initial parameters for problem node rotation
+      enableProblematicNodeRemoval: false,
+      enableProblematicNodeRemovalOnCycle: 20000,
+      maxProblematicNodeRemovalsPerCycle: 1,
+      problematicNodeConsecutiveRefuteThreshold: 6,
+      problematicNodeRefutePercentageThreshold: 0.1,
+      problematicNodeHistoryLength: 100,
+      problematicNodeRemovalCycleFrequency: 5,
     },
     features: {
       //This feature will restrict transactions to only coin transfers
