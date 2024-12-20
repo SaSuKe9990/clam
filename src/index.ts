@@ -2433,6 +2433,10 @@ const configShardusNetworkTransactions = (): void => {
         console.log(`registerBeforeAddVerifier - nodeReward: Account for shardus address ${shardusAddress} not found, do not add tx`)
         return false
       }
+      if (!account.data) {
+        console.log(`registerBeforeAddVerifier - nodeReward: Account for shardus address ${shardusAddress} has no data, do not add tx`)
+        return false
+      }
       if ((account.data as NodeAccount2).nominator == null) {
         console.log(`registerBeforeAddVerifier - nodeReward: Account for shardus address ${shardusAddress} has null nominator, do not add tx`)
         return false
@@ -2496,6 +2500,10 @@ const configShardusNetworkTransactions = (): void => {
         console.log(`registerApplyVerifier - nodeReward: Account for shardus address ${shardusAddress} not found, removing tx`)
         return true
       }
+      if (!account.data) {
+        console.log(`registerApplyVerifier - nodeReward: Account for shardus address ${shardusAddress} has no data, removing tx`)
+        return true
+      }
       const data = account.data as NodeAccount2
       if (data.nominator == null) {
         console.log(`registerApplyVerifier - nodeReward: Account for shardus address ${shardusAddress} has null nominator, removing tx`)
@@ -2522,6 +2530,10 @@ const configShardusNetworkTransactions = (): void => {
       const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
       if (!account) {
         console.log(`registerBeforeAddVerifier - nodeInitReward: Account for shardus address ${shardusAddress} not found, do not add tx`)
+        return false
+      }
+      if (!account.data) {
+        console.log(`registerBeforeAddVerifier - nodeInitReward: Account for shardus address ${shardusAddress} has no data, do not add tx`)
         return false
       }
       if ((account.data as NodeAccount2).nominator == null) {
@@ -2559,6 +2571,10 @@ const configShardusNetworkTransactions = (): void => {
       const account = await shardus.getLocalOrRemoteAccount(shardusAddress)
       if (!account) {
         console.log(`registerApplyVerifier - nodeInitReward: Account for shardus address ${shardusAddress} not found, removing tx`)
+        return true
+      }
+      if (!account.data) {
+        console.log(`registerApplyVerifier - nodeReward: Account for shardus address ${shardusAddress} has no data, removing tx`)
         return true
       }
       const data = account.data as NodeAccount2
