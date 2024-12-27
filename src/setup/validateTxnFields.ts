@@ -209,6 +209,13 @@ export const validateTxnFields =
       }
 
       if (isDebugTx(tx)) {
+        if (!ShardeumFlags.debugTxEnabled) {
+          return {
+            success: false,
+            reason: 'Debug TX is not allowed',
+            txnTimestamp,
+          }
+        }
         return {
           success: true,
           reason: 'always valid',

@@ -4005,6 +4005,9 @@ const shardusSetup = (): void => {
       }
 
       if (isDebugTx(tx)) {
+        if (!ShardeumFlags.debugTxEnabled) {
+          throw new Error(`invalid transaction, reason: Debug tx are not enabled. tx: ${Utils.safeStringify(tx)}`)
+        }
         const debugTx = tx as DebugTx
         return applyDebugTx(debugTx, wrappedStates, txTimestamp)
       }
@@ -5084,6 +5087,11 @@ const shardusSetup = (): void => {
       if (ShardeumFlags.internalTxTimestampFix === false) appData.requestNewTimestamp = true // force all txs to generate a new timestamp
       // Check if we are active
 
+
+      if (isDebugTx(tx) && !ShardeumFlags.debugTxEnabled){
+        return { status: false, reason: `Debug TX have been disabled.` }
+      }
+
       if (isInternalTx(tx) === false && isDebugTx(tx) === false) {
         const shardusTxId = generateTxId(tx)
         const transaction = getTransactionObj(tx)
@@ -5495,6 +5503,9 @@ const shardusSetup = (): void => {
         }
       }
       if (isDebugTx(tx)) {
+        if (!ShardeumFlags.debugTxEnabled) {
+          throw new Error(`Unable to crack debug transaction. Debug tx are disabled ${Utils.safeStringify(tx)}`)
+        }
         const debugTx = tx as DebugTx
         const txId = generateTxId(tx)
         const keys = {
@@ -5887,6 +5898,9 @@ const shardusSetup = (): void => {
         )
       }
       if (isDebugTx(tx)) {
+        if (!ShardeumFlags.debugTxEnabled) {
+            throw new Error(`Unable to get relevant data. Debug tx are disabled ${Utils.safeStringify(tx)}`)
+        }
         let accountCreated = false
         //let wrappedEVMAccount = accounts[accountId]
         /* prettier-ignore */ shardus.setDebugSetLastAppAwait(`getRelevantData.AccountsStorage.getAccount(${accountId}) 1`)

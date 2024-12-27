@@ -91,6 +91,9 @@ export const validateTransaction =
     }
 
     if (isDebugTx(tx)) {
+      if (!ShardeumFlags.debugTxEnabled) {
+        return { result: 'fail', reason: 'Debug TX is not allowed' }
+      }
       //todo validate debug TX
       return { result: 'pass', reason: 'all_allowed' }
     }
