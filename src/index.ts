@@ -4043,6 +4043,7 @@ const shardusSetup = (): void => {
           verifyResult = verifyStakeTx(appData.internalTx, senderAddress, wrappedStates)
         }
         if (appData.internalTx && appData.internalTXType === InternalTXType.Unstake) {
+          appData.internalTx = getStakeTxBlobFromEVMTx(transaction)
           verifyResult = verifyUnstakeTx(appData.internalTx, senderAddress, wrappedStates, shardus);
         }
         if (appData.internalTx && appData.internalTXType === InternalTXType.TransferFromSecureAccount) {

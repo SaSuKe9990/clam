@@ -447,6 +447,7 @@ export const validateTxnFields =
 
         if (appData && appData.internalTx && appData.internalTXType === InternalTXType.Unstake) {
           nestedCountersInstance.countEvent('shardeum-unstaking', 'validating unstake coins tx fields')
+          appData.internalTx = getStakeTxBlobFromEVMTx(transaction)
           if (ShardeumFlags.VerboseLogs) console.log('Validating unstake coins tx fields', appData.internalTx)
           const unstakeCoinsTX = appData.internalTx as UnstakeCoinsTX
           if (
