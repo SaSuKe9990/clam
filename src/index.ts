@@ -181,6 +181,7 @@ import {
   secureAccountDataMap 
 } from './shardeum/secureAccounts'
 import * as TicketManager from './setup/ticket-manager'
+import { getHeapStatistics } from 'v8'
 
 let latestBlock = 0
 export const blocks: BlockMap = {}
@@ -8182,6 +8183,7 @@ export function shardeumGetTime(): number {
   //@ts-ignore
   logFlags = shardus.getLogFlags()
   //do not need to have log levels for these flags:
+  console.log(`Heap Size Limit: ${getHeapStatistics().heap_size_limit / 1024 / 1024} MB`)
   console.log('Shardus Server Config:')
   /** This is just the ServerConfiguration part of the shardus core configuration*/
   shardusConfig = shardus.config
