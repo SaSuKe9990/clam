@@ -6929,17 +6929,6 @@ const shardusSetup = (): void => {
         }
 
         const appJoinData = data.appJoinData as AppJoinData
-
-        const verifyErrors = verifyPayload(AJVSchemaEnum.AppJoinData, appJoinData)
-        if (verifyErrors) {
-          /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: verifyErrors`)
-          return {
-            success: false,
-            reason: `Join request node app join data is invalid. ${verifyErrors.join(', ')}`,
-            fatal: true,
-          }
-        }
-
         const minVersion = AccountsStorage.cachedNetworkAccount.current.minVersion
         if (!isEqualOrNewerVersion(minVersion, appJoinData.version)) {
           /* prettier-ignore */ if (ShardeumFlags.VerboseLogs) console.log(`validateJoinRequest fail: old version`)
@@ -8041,6 +8030,7 @@ const shardusSetup = (): void => {
       const NGT_TYPES = [INIT_REWARD_TX, CLAIM_REWARD_TX]
       return NGT_TYPES.includes(tx?.['internalTXType'])
     },
+    verifyAppJoinData: (data: unknown): string[] | null => verifyPayload(AJVSchemaEnum.AppJoinData, data),
     async getNetworkAccountFromArchiver(): Promise<WrappedAccount> {
       try {
         const networkAccount = await fetchNetworkAccountFromArchiver()
