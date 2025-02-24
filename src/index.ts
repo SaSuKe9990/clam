@@ -5202,16 +5202,30 @@ const shardusSetup = (): void => {
 
         const isStakeRelatedTx: boolean = isStakingEVMTx(transaction)
 
-        const isEIP2930 =
-          transaction instanceof AccessListEIP2930Transaction && transaction.AccessListJSON != null
         let isSimpleTransfer = false
-
         let remoteShardusAccount
         let remoteTargetAccount
         appData.requestNewTimestamp = true // force all evm txs to generate a new timestamp
 
-        if (isEIP2930 && isStakingEVMTx(transaction) === false) {
-          return { status: false, reason: `EVM txs have been disabled` }
+        const isEIP2930 = transaction instanceof AccessListEIP2930Transaction && transaction.AccessListJSON != null
+        if (isEIP2930) {
+          const eip2930Tx = (transaction as AccessListEIP2930Transaction)
+
+          const tooManyAddresses = eip2930Tx.AccessListJSON?.length > ShardeumFlags.accessListSizeLimit;
+          if (tooManyAddresses) {
+            return { 
+              status: false, 
+              reason: `EIP2930 tx blocked for having > ${ShardeumFlags.accessListSizeLimit} addresses in accessList`
+            }
+          }        
+
+          const tooManyStorageKeys = eip2930Tx.AccessListJSON?.some((accessListItem) => accessListItem.storageKeys?.length > ShardeumFlags.accessListSizeLimit)
+          if (tooManyStorageKeys) {
+            return { 
+              status: false, 
+              reason: `EIP2930 tx blocked for having > ${ShardeumFlags.accessListSizeLimit} storage keys for at least one address`
+            }
+          }
         }
 
         //if the TX is a contract deploy, predict the new contract address correctly (needs sender's nonce)
