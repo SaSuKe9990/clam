@@ -134,6 +134,14 @@ export function validateTransferFromSecureAccount(
     return { success: false, reason: 'Invalid nonce' }
   }
 
+  if (
+    typeof tx.chainId !== 'string' ||
+    !/^0x[0-9a-fA-F]+$/.test(tx.chainId) ||
+    BigInt(tx.chainId) !== BigInt(ShardeumFlags.ChainID)
+  ) {
+    return { success: false, reason: 'Invalid chain ID' }
+  }
+
   const secureAccountData = secureAccountDataMap.get(tx.accountName)
   if (!secureAccountData) {
     return { success: false, reason: 'Secure account not found' }
@@ -153,6 +161,7 @@ export function validateTransferFromSecureAccount(
     amount: tx.amount,
     accountName: tx.accountName,
     nonce: tx.nonce,
+    chainId: tx.chainId, // Now this is a hex string
   }
 
   // Clean multiSigPermissions to remove any keys not in shardusConfig.debug.multisigKeys
@@ -266,7 +275,7 @@ export async function apply(
   const amount = BigInt(tx.amount)
 
   // Get the shardeumState instance
-  let shardeumState = getApplyTXState(txId)
+  const shardeumState = getApplyTXState(txId)
 
   // Start transaction
   shardus.setDebugSetLastAppAwait(`apply():checkpoint_secure_accounts`)
